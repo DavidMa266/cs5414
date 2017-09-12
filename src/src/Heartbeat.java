@@ -1,9 +1,6 @@
-package src;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.PrintWriter;
-import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
@@ -15,7 +12,6 @@ public class Heartbeat extends Thread{
 	String targetHostName;
 	
 	int targetServerListenerPortNumber;
-	int targetHeartbeatPortNumber;
 	int targetMasterListenerPortNumber;
 	
 	public Heartbeat(Server server, String hostName, int targetServerPortNumber, int targetMasterPortNumber) {
@@ -34,31 +30,29 @@ public class Heartbeat extends Thread{
 			//S1 discovers S2
 			//S1 sends S2 a NEW SERVER call
 			//S1 sends S2 its masterPort and serverPort
-			//S2 creates new thread and new port
-			//S2 sends S1 a port to conect heartbeat to
-			//S1 records masterPort
+			//S2 says thanks
+			//S1 continues on its way
+
 			//If it already exists, we don't want to create a new heartbeat listener, so just quit this thread out
+			
+
+			System.out.println( "" + server.masterListenerPortNumber + ": Discovering New Server at " + this.targetServerListenerPortNumber);
+			System.out.println( "" + server.masterListenerPortNumber + ": "+ this.targetServerListenerPortNumber + " currently existing? " + this.server.serverExists(this.targetMasterListenerPortNumber));
+			
 			if (this.server.serverExists(this.targetMasterListenerPortNumber)) return false;
 			
 			Socket discover = new Socket(targetHostName, targetPortNumber);
-			PrintWriter pw = new PrintWriter(discover.getOutputStream(), true);
-			pw.println(Server.NEW_SERVER);
-			pw.println(Server.HOSTNAME);
-			pw.println(this.server.masterListenerPortNumber);
-			pw.println(this.server.serverListenerPortNumber);
-			//So we send the other server our Hostname and listenerportnubmer so they can find us
-			//We receive an open port to connect
 			
-			InputStream is = discover.getInputStream();				
-			String command = Helpers.convertStreamToString(is);
-			String[] commands = command.split("\r\n");
-			this.targetHeartbeatPortNumber = Integer.parseInt(commands[0]);
+			System.out.println("" + server.masterListenerPortNumber + ": Discovery of New Server " + this.targetServerListenerPortNumber + " is successful");
+			PrintWriter pw = new PrintWriter(discover.getOutputStream(), true);
+			pw.println(Server.NEW_SERVER + " " + Server.HOSTNAME + " " + this.server.masterListenerPortNumber + " " + this.server.serverListenerPortNumber);
 			
 			discover.close();
 			return true;
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
+			System.out.println( "" + server.masterListenerPortNumber + ": Heartbeat failed, server " + this.targetServerListenerPortNumber + " does not appear to be online");
 		}
 		return false;
 	}
@@ -71,18 +65,20 @@ public class Heartbeat extends Thread{
 			if (discoverNewServer(this.targetHostName, this.targetServerListenerPortNumber)) {
 				//If we discover a server at this listener port number, we have contacted it and received a heartbeat port to connect to
 				//Then we actually form the heartbeat
-				this.server.addServer(this.targetMasterListenerPortNumber);
+				this.server.addServer(this.targetMasterListenerPortNumber, this.targetServerListenerPortNumber);
 				while (true) {
 					try {
-						Socket heartbeat = new Socket(targetHostName, targetHeartbeatPortNumber);
-						System.out.println("Sending from " + this.server.serverListenerPortNumber + " to " + this.targetHeartbeatPortNumber);
+						Socket heartbeat = new Socket(targetHostName, this.targetServerListenerPortNumber);
+						
+						//This is for debugging purposes, we don't actually need it
+						System.out.println("" + this.server.masterListenerPortNumber + ": Sending heartbeat to " + this.targetServerListenerPortNumber);
 						PrintWriter pw = new PrintWriter(heartbeat.getOutputStream(), true);
-						pw.println(Server.HEARTBEAT);
-						pw.println(this.serverHostName);
-						pw.println(this.server.serverListenerPortNumber);
+						pw.println(Server.HEARTBEAT + " " + this.server.masterListenerPortNumber);
+						///
+						
 						heartbeat.close();
 						try {
-							Thread.sleep(3000);
+							Thread.sleep(2000);
 						} catch (InterruptedException e) {
 							e.printStackTrace();
 						}
@@ -90,7 +86,7 @@ public class Heartbeat extends Thread{
 					} catch (UnknownHostException e) {
 						e.printStackTrace();
 					} catch (IOException e) {
-						System.out.println("Reaching the IO Exception within Heartbeat.java");
+						System.out.println("Lost connection to " + this.targetMasterListenerPortNumber);
 						break;
 					}
 				}

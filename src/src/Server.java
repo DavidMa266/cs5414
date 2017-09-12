@@ -1,9 +1,10 @@
-package src;
 
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,25 +14,27 @@ public class Server {
 	public final static String HOSTNAME = "localhost";
 	public final static String NEW_SERVER 			= "--new-server--";
 	public final static String HEARTBEAT 			= "--heartbeat--";
-	public final static String GET 					= "--get--";
-	public final static String ALIVE 				= "--alive--";
-	public final static String BROADCAST 			= "--broadcast--";
+	public final static String MESSAGE 				= "--message--";
+	public final static String GET 					= "get";
+	public final static String ALIVE 				= "alive";
+	public final static String BROADCAST 			= "broadcast";
 
 	public final static int PORT = 30000;
-	public final static int MAX_PORT = PORT + 4;
+	public final static int MAX_PORT = PORT + 16;
 
 	int masterListenerPortNumber;
 	int serverListenerPortNumber;
 	int serverListeningPort;
 	ServerSocket serverListeningSocket;
 	ServerSocket masterListeningSocket;
-	Map<Integer, Boolean> activeServers;
+	Map<Integer, Integer> activeServers;
 	List<String> messages;
 
 	public Server(int portNumber) {
 		this.masterListenerPortNumber = portNumber;
 		this.serverListenerPortNumber = portNumber - 10000;
-		this.activeServers = new HashMap<Integer, Boolean>();
+		this.activeServers = new HashMap<Integer, Integer>();
+		this.activeServers.put(this.masterListenerPortNumber, this.serverListenerPortNumber);
 		
 		//Server starts
 		//Create two threads for the two listening sockets
@@ -55,6 +58,7 @@ public class Server {
 		
 		master.start();
 		server.start();
+		System.out.println( "" + masterListenerPortNumber + ": Started");
 		
 		while(true) {
 			try {
@@ -83,6 +87,7 @@ public class Server {
 	public void notifyServers() {
 		for (int i = PORT; i < MAX_PORT; i++) {
 			if (i == this.masterListenerPortNumber) continue;
+			System.out.println( "" + masterListenerPortNumber + ": Creating Heartbeat to " + (i-10000));
 			Heartbeat hb = new Heartbeat(this, HOSTNAME, i - 10000, i);
 			hb.start();
 		}
@@ -93,13 +98,21 @@ public class Server {
 		hb.start();
 	}
 	
+	public synchronized void addMessage(String msg) {
+		this.messages.add(msg);
+	}
+	
+	public List<String> getMessages() {
+		return this.messages;
+	}
+	
 	public synchronized boolean serverExists(int portNumber) {
 		return this.activeServers.get(portNumber) != null;
 	}
 	
-	public synchronized void addServer(int portNumber) {
+	public synchronized void addServer(int portNumber, int serverPortNumber) {
 		System.out.println("Adding " + portNumber + " to " + this.masterListenerPortNumber);
-		this.activeServers.put(portNumber, true);
+		this.activeServers.put(portNumber, serverPortNumber);
 	}
 	
 	public synchronized void removeServer(int portNumber) {
@@ -107,6 +120,15 @@ public class Server {
 		this.activeServers.remove(portNumber);
 	}
 
+	public synchronized List<Integer> getMasters() {
+		List<Integer> lst =  new ArrayList<Integer>(this.activeServers.keySet());
+		Collections.sort(lst);
+		return lst;
+	}
+	
+	public synchronized List<Integer> getServers() {
+		return new ArrayList<Integer>(this.activeServers.values());
+	}
 
 	public static void main(String[] args) {
 		int arg = Integer.parseInt(args[0]);
