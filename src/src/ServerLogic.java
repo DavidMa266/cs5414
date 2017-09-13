@@ -34,6 +34,7 @@ public class ServerLogic extends Thread{
 					break;
 				}
 				case Server.HEARTBEAT: {
+					//In case we ever want to collect heartbeat metrics
 					break;
 				}
 				case Server.MESSAGE: {
@@ -58,6 +59,7 @@ public class ServerLogic extends Thread{
 						if (i != serverIds.size() -1) result += ",";
 					}
 					output.println(result);
+					System.out.println(result);
 					break;
 				}
 				case Server.BROADCAST:{

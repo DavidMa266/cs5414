@@ -13,7 +13,6 @@ import java.util.Map;
 public class Server {
 
 	public final static String HOSTNAME 			= "localhost";
-	public final static String ACK 					= "--ack--";
 	public final static String NEW_SERVER 			= "--new-server--";
 	public final static String HEARTBEAT 			= "--heartbeat--";
 	public final static String MESSAGE 				= "--message--";
@@ -32,6 +31,7 @@ public class Server {
 	List<String> messages;
 
 	public Server(int id, int n, int portNumber) {
+		if(n < id) System.err.println("Error, the value of N should be greater than id");
 		this.n = n;
 		this.masterListenerPortNumber = portNumber;
 		this.serverListenerPortNumber = PORT + id;

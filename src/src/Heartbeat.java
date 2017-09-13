@@ -26,7 +26,7 @@ public class Heartbeat extends Thread {
 	// Returns true if a server has been discovered
 	public boolean discoverNewServer() {
 		try {
-			if (this.server.serverExists(this.targetServerListenerPortNumber)) return false;
+			if (this.server.serverExists(this.targetId)) return false;
 			Socket discover = new Socket(this.targetHostName, this.targetServerListenerPortNumber);
 			this.server.addServer(targetId);
 			PrintWriter pw = new PrintWriter(discover.getOutputStream(), true);
@@ -48,9 +48,13 @@ public class Heartbeat extends Thread {
 			while (true) {
 				try {
 					Socket heartbeat = new Socket(targetHostName, this.targetServerListenerPortNumber);
+					/*
+					PrintWriter pw = new PrintWriter(heartbeat.getOutputStream(), true);
+					pw.println(Server.HEARTBEAT);
+					*/
 					heartbeat.close();
 					try {
-						Thread.sleep(200);
+						Thread.sleep(2000);
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
