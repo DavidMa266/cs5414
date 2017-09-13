@@ -26,18 +26,17 @@ public class Server {
 	int n;
 	int masterListenerPortNumber;
 	int serverListenerPortNumber;
-	int serverListeningPort;
 	ServerSocket serverListeningSocket;
 	ServerSocket masterListeningSocket;
-	Map<Integer, Integer> activeServers;
+	boolean[] activeServers;
 	List<String> messages;
 
 	public Server(int id, int n, int portNumber) {
 		this.n = n;
 		this.masterListenerPortNumber = portNumber;
 		this.serverListenerPortNumber = PORT + id;
-		this.activeServers = new HashMap<Integer, Integer>();
-		this.activeServers.put(this.serverListenerPortNumber, this.masterListenerPortNumber);
+		this.activeServers = new boolean[n];
+		this.activeServers[id] = true;
 		
 		//Server starts
 		//Create two threads for the two listening sockets
@@ -61,7 +60,6 @@ public class Server {
 		
 		master.start();
 		server.start();
-		System.out.println( "" + masterListenerPortNumber + ": Started");
 		
 		while(true) {
 			try {
@@ -80,7 +78,6 @@ public class Server {
 	public void notifyServers() {
 		for (int i = PORT; i < PORT + this.n; i++) {
 			if (i == this.serverListenerPortNumber) continue;
-			System.out.println( "" + this.masterListenerPortNumber + ": Creating Heartbeat to " + (i));
 			createHeartbeat(HOSTNAME, i);
 		}
 	}
@@ -99,27 +96,23 @@ public class Server {
 	}
 	
 	public synchronized boolean serverExists(int portNumber) {
-		return this.activeServers.get(portNumber) != null;
+		return this.activeServers[portNumber];
 	}
 	
-	public synchronized void addServer(int serverPortNumber, int masterPortNumber) {
-		System.out.println("Adding " + serverPortNumber + " to " + this.masterListenerPortNumber);
-		this.activeServers.put(serverPortNumber, masterPortNumber);
+	public synchronized void addServer(int serverPortNumber) {
+		this.activeServers[serverPortNumber] = true;
 	}
 	
 	public synchronized void removeServer(int serverPortNumber) {
-		System.out.println("Removing " + serverPortNumber + " from " + this.masterListenerPortNumber);
-		this.activeServers.remove(serverPortNumber);
-	}
-
-	public synchronized List<Integer> getMasters() {
-		List<Integer> lst =  new ArrayList<Integer>(this.activeServers.values());
-		Collections.sort(lst);
-		return lst;
+		this.activeServers[serverPortNumber] = false;
 	}
 	
 	public synchronized List<Integer> getServers() {
-		return new ArrayList<Integer>(this.activeServers.keySet());
+		List<Integer> activeServers = new ArrayList<Integer>();
+		for (int i = 0; i < n; i++) {
+			if(this.activeServers[i]) activeServers.add(i);
+		}
+		return activeServers;
 	}
 
 	public static void main(String[] args) {

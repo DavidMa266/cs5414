@@ -13,13 +13,14 @@ public class Heartbeat extends Thread {
 	String targetHostName;
 
 	int targetServerListenerPortNumber;
-	int targetMasterListenerPortNumber;
+	int targetId;
 
 	public Heartbeat(Server server, String hostName, int targetServerPortNumber) {
 		this.server = server;
 		this.serverHostName = Server.HOSTNAME;
 		this.targetHostName = hostName;
 		this.targetServerListenerPortNumber = targetServerPortNumber;
+		this.targetId = targetServerPortNumber - Server.PORT;
 	}
 
 	// Returns true if a server has been discovered
@@ -27,7 +28,7 @@ public class Heartbeat extends Thread {
 		try {
 			if (this.server.serverExists(this.targetServerListenerPortNumber)) return false;
 			Socket discover = new Socket(this.targetHostName, this.targetServerListenerPortNumber);
-			this.server.addServer(this.targetServerListenerPortNumber, -1);
+			this.server.addServer(targetId);
 			PrintWriter pw = new PrintWriter(discover.getOutputStream(), true);
 			pw.println(Server.NEW_SERVER + " " + Server.HOSTNAME + " " + this.server.serverListenerPortNumber);
 			discover.close();
@@ -41,23 +42,15 @@ public class Heartbeat extends Thread {
 		return false;
 	}
 
-	// Heartbeats are for server-server connection
-	// The initial connect is done using the serverListenerPortNumber
-	// The subsequent connects are created from a new Socket
 	@Override
 	public void run() {
 		if (discoverNewServer()) {
-			// If we discover a server at this listener port number, we have contacted it
-			// and received a heartbeat port to connect to
-			// Then we actually form the heartbeat
-
-			this.server.addServer(this.targetServerListenerPortNumber, this.targetMasterListenerPortNumber);
 			while (true) {
 				try {
 					Socket heartbeat = new Socket(targetHostName, this.targetServerListenerPortNumber);
 					heartbeat.close();
 					try {
-						Thread.sleep(2000);
+						Thread.sleep(200);
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
@@ -69,7 +62,7 @@ public class Heartbeat extends Thread {
 					break;
 				}
 			}
-			this.server.removeServer(this.targetServerListenerPortNumber);
+			this.server.removeServer(this.targetId);
 		}
 	}
 }

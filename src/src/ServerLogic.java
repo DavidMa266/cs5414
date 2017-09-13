@@ -55,7 +55,7 @@ public class ServerLogic extends Thread{
 					List<Integer> serverIds = this.server.getServers();
 					for(int i = 0; i < serverIds.size(); i++) { 
 						result += serverIds.get(i);
-						if (i != serverIds.size() -1) result += ", ";
+						if (i != serverIds.size() -1) result += ",";
 					}
 					output.println(result);
 					break;
