@@ -123,7 +123,7 @@ def exit(force=False):
 
 
 def timeout():
-    time.sleep(60)
+    time.sleep(600)
     print 'Timeout!'
     exit(True)
 

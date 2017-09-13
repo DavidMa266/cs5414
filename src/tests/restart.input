@@ -13,4 +13,7 @@ sleep 1000
 0 get
 1 get
 1 alive
+0 broadcast hello
+sleep 1000
+1 get
 exit
