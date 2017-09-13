@@ -1,4 +1,5 @@
 
+
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.Socket;
@@ -14,39 +15,22 @@ public class Heartbeat extends Thread{
 	int targetServerListenerPortNumber;
 	int targetMasterListenerPortNumber;
 	
-	public Heartbeat(Server server, String hostName, int targetServerPortNumber, int targetMasterPortNumber) {
+	public Heartbeat(Server server, String hostName, int targetServerPortNumber) {
 		this.server = server;
 		this.serverHostName = Server.HOSTNAME;
 		this.targetHostName = hostName;
-		
 		this.targetServerListenerPortNumber = targetServerPortNumber;
-		this.targetMasterListenerPortNumber = targetMasterPortNumber;
 	}
 	
 	//Returns true if a server has been discovered
-	public boolean discoverNewServer(String targetHostName, int targetPortNumber) { 
+	public boolean discoverNewServer() { 
 		try {
-			//S1 checks to see if S2 is in its list
-			//S1 discovers S2
-			//S1 sends S2 a NEW SERVER call
-			//S1 sends S2 its masterPort and serverPort
-			//S2 says thanks
-			//S1 continues on its way
-
-			//If it already exists, we don't want to create a new heartbeat listener, so just quit this thread out
-			
-
 			System.out.println( "" + server.masterListenerPortNumber + ": Discovering New Server at " + this.targetServerListenerPortNumber);
-			System.out.println( "" + server.masterListenerPortNumber + ": "+ this.targetServerListenerPortNumber + " currently existing? " + this.server.serverExists(this.targetMasterListenerPortNumber));
-			
-			if (this.server.serverExists(this.targetMasterListenerPortNumber)) return false;
-			
-			Socket discover = new Socket(targetHostName, targetPortNumber);
-			
-			System.out.println("" + server.masterListenerPortNumber + ": Discovery of New Server " + this.targetServerListenerPortNumber + " is successful");
+			if (this.server.serverExists(this.targetServerListenerPortNumber)) return false;
+			Socket discover = new Socket(this.targetHostName, this.targetServerListenerPortNumber);
+			this.server.addServer(this.targetServerListenerPortNumber, -1);
 			PrintWriter pw = new PrintWriter(discover.getOutputStream(), true);
-			pw.println(Server.NEW_SERVER + " " + Server.HOSTNAME + " " + this.server.masterListenerPortNumber + " " + this.server.serverListenerPortNumber);
-			
+			pw.println(Server.NEW_SERVER + " " + Server.HOSTNAME + " " + this.server.serverListenerPortNumber);
 			discover.close();
 			return true;
 		} catch (UnknownHostException e) {
@@ -62,20 +46,14 @@ public class Heartbeat extends Thread{
 	//The subsequent connects are created from a new Socket
 	@Override
 	public void run() { 	
-			if (discoverNewServer(this.targetHostName, this.targetServerListenerPortNumber)) {
+			if (discoverNewServer()) {
 				//If we discover a server at this listener port number, we have contacted it and received a heartbeat port to connect to
 				//Then we actually form the heartbeat
-				this.server.addServer(this.targetMasterListenerPortNumber, this.targetServerListenerPortNumber);
+
+				this.server.addServer(this.targetServerListenerPortNumber, this.targetMasterListenerPortNumber);
 				while (true) {
 					try {
 						Socket heartbeat = new Socket(targetHostName, this.targetServerListenerPortNumber);
-						
-						//This is for debugging purposes, we don't actually need it
-						System.out.println("" + this.server.masterListenerPortNumber + ": Sending heartbeat to " + this.targetServerListenerPortNumber);
-						PrintWriter pw = new PrintWriter(heartbeat.getOutputStream(), true);
-						pw.println(Server.HEARTBEAT + " " + this.server.masterListenerPortNumber);
-						///
-						
 						heartbeat.close();
 						try {
 							Thread.sleep(2000);
@@ -86,11 +64,11 @@ public class Heartbeat extends Thread{
 					} catch (UnknownHostException e) {
 						e.printStackTrace();
 					} catch (IOException e) {
-						System.out.println("Lost connection to " + this.targetMasterListenerPortNumber);
+						System.out.println("Lost connection to " + this.targetServerListenerPortNumber);
 						break;
 					}
 				}
-				this.server.removeServer(this.targetMasterListenerPortNumber);
+				this.server.removeServer(this.targetServerListenerPortNumber);
 			}
 	}
 }

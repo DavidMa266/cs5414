@@ -27,10 +27,8 @@ public class ServerLogic extends Thread{
 			switch(commands[0]) {
 				case Server.NEW_SERVER: {
 					String hostName = commands[1];
-					int masterPort = Integer.parseInt(commands[2]);
-					int serverPort = Integer.parseInt(commands[3]);
-					Heartbeat hb = new Heartbeat(server, hostName, serverPort, masterPort);
-					hb.start();
+					int serverPort = Integer.parseInt(commands[2]);
+					server.createHeartbeat(hostName, serverPort);
 					break;
 				}
 				case Server.HEARTBEAT: {
@@ -39,7 +37,7 @@ public class ServerLogic extends Thread{
 					break;
 				}
 				case Server.MESSAGE: {
-					this.server.addMessage(command);
+					this.server.addMessage(command.substring(Server.MESSAGE.length()));
 					break;
 				}
 				case Server.GET: {
@@ -68,7 +66,7 @@ public class ServerLogic extends Thread{
 						try {
 							Socket broadcast = new Socket(Server.HOSTNAME, serverIds.get(i));
 							PrintWriter pw = new PrintWriter(broadcast.getOutputStream(), true);
-							pw.println(message);
+							pw.println(Server.MESSAGE + " " + message);
 							broadcast.close();
 						}
 						catch(IOException e) {

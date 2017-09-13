@@ -11,7 +11,8 @@ import java.util.Map;
 
 public class Server {
 
-	public final static String HOSTNAME = "localhost";
+	public final static String HOSTNAME 			= "localhost";
+	public final static String ACK 					= "--ack--";
 	public final static String NEW_SERVER 			= "--new-server--";
 	public final static String HEARTBEAT 			= "--heartbeat--";
 	public final static String MESSAGE 				= "--message--";
@@ -19,9 +20,9 @@ public class Server {
 	public final static String ALIVE 				= "alive";
 	public final static String BROADCAST 			= "broadcast";
 
-	public final static int PORT = 30000;
-	public final static int MAX_PORT = PORT + 16;
+	public final static int PORT = 20000;
 
+	int n;
 	int masterListenerPortNumber;
 	int serverListenerPortNumber;
 	int serverListeningPort;
@@ -30,11 +31,12 @@ public class Server {
 	Map<Integer, Integer> activeServers;
 	List<String> messages;
 
-	public Server(int portNumber) {
+	public Server(int id, int n, int portNumber) {
+		this.n = n;
 		this.masterListenerPortNumber = portNumber;
-		this.serverListenerPortNumber = portNumber - 10000;
+		this.serverListenerPortNumber = PORT + id;
 		this.activeServers = new HashMap<Integer, Integer>();
-		this.activeServers.put(this.masterListenerPortNumber, this.serverListenerPortNumber);
+		this.activeServers.put(this.serverListenerPortNumber, this.masterListenerPortNumber);
 		
 		//Server starts
 		//Create two threads for the two listening sockets
@@ -71,30 +73,19 @@ public class Server {
 		}
 		notifyServers();
 	}
-	
-	public int createServerSocket() {
-		try {
-			ServerSocket ss = Helpers.findFreePort();
-			return ss.getLocalPort();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		return -1;
-		
-	}
-	
+
 	//Attempt to contact all servers and set up a heartbeat
+	//We can contact all other servers by going through the portnumbers
 	public void notifyServers() {
-		for (int i = PORT; i < MAX_PORT; i++) {
-			if (i == this.masterListenerPortNumber) continue;
-			System.out.println( "" + masterListenerPortNumber + ": Creating Heartbeat to " + (i-10000));
-			Heartbeat hb = new Heartbeat(this, HOSTNAME, i - 10000, i);
-			hb.start();
+		for (int i = PORT; i < PORT + this.n; i++) {
+			if (i == this.serverListenerPortNumber) continue;
+			System.out.println( "" + this.masterListenerPortNumber + ": Creating Heartbeat to " + (i));
+			createHeartbeat(HOSTNAME, i);
 		}
 	}
 
-	public void createHeartbeat(String hostName, int targetServerPortNumber, int targetMasterPortNumber) {
-		Heartbeat hb = new Heartbeat(this, hostName, targetServerPortNumber, targetMasterPortNumber);
+	public void createHeartbeat(String hostName, int targetServerPortNumber) {
+		Heartbeat hb = new Heartbeat(this, hostName, targetServerPortNumber);
 		hb.start();
 	}
 	
@@ -110,28 +101,30 @@ public class Server {
 		return this.activeServers.get(portNumber) != null;
 	}
 	
-	public synchronized void addServer(int portNumber, int serverPortNumber) {
-		System.out.println("Adding " + portNumber + " to " + this.masterListenerPortNumber);
-		this.activeServers.put(portNumber, serverPortNumber);
+	public synchronized void addServer(int serverPortNumber, int masterPortNumber) {
+		System.out.println("Adding " + serverPortNumber + " to " + this.masterListenerPortNumber);
+		this.activeServers.put(serverPortNumber, masterPortNumber);
 	}
 	
-	public synchronized void removeServer(int portNumber) {
-		System.out.println("Removing " + portNumber + " from " + this.masterListenerPortNumber);
-		this.activeServers.remove(portNumber);
+	public synchronized void removeServer(int serverPortNumber) {
+		System.out.println("Removing " + serverPortNumber + " from " + this.masterListenerPortNumber);
+		this.activeServers.remove(serverPortNumber);
 	}
 
 	public synchronized List<Integer> getMasters() {
-		List<Integer> lst =  new ArrayList<Integer>(this.activeServers.keySet());
+		List<Integer> lst =  new ArrayList<Integer>(this.activeServers.values());
 		Collections.sort(lst);
 		return lst;
 	}
 	
 	public synchronized List<Integer> getServers() {
-		return new ArrayList<Integer>(this.activeServers.values());
+		return new ArrayList<Integer>(this.activeServers.keySet());
 	}
 
 	public static void main(String[] args) {
-		int arg = Integer.parseInt(args[0]);
-		Server s = new Server(arg);
+		int id = Integer.parseInt(args[0]);
+		int n = Integer.parseInt(args[1]);
+		int port = Integer.parseInt(args[2]);
+		Server s = new Server(id, n, port);
 	}
 }
