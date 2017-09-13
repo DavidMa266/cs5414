@@ -26,8 +26,8 @@ public class ServerLogic extends Thread{
 			PrintWriter output = new PrintWriter(connection.getOutputStream(), true);
 
 			BufferedReader br = new BufferedReader(new InputStreamReader(input));
-			String command = br.readLine();
-			if (command != null) {
+			String command;
+			while ((command = br.readLine()) != null) {
 				String[] commands = command.split("\\s+");
 				
 				switch(commands[0]) {
@@ -56,6 +56,7 @@ public class ServerLogic extends Thread{
 						break;
 					}
 					case Server.ALIVE: {
+						System.out.println("Hello");
 						String result = "alive ";
 						List<Integer> serverIds = this.server.getServers();
 						for(int i = 0; i < serverIds.size(); i++) { 
