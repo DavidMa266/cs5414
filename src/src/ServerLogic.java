@@ -50,7 +50,7 @@ public class ServerLogic extends Thread{
 						String result = "messages ";
 						for(int i = 0; i < messages.size(); i++) {
 							result += messages.get(i);
-							if( i != messages.size()-1) result += ", ";
+							if( i != messages.size()-1) result += ",";
 						}
 						output.println(result);
 						break;
@@ -66,13 +66,14 @@ public class ServerLogic extends Thread{
 						break;
 					}
 					case Server.BROADCAST:{
-						String message = command.substring(Server.BROADCAST.length());
+						//+1 for the extra space
+						String message = command.substring(Server.BROADCAST.length() + 1);
 						this.server.addMessage(message);
 						List<Integer> serverIds = this.server.getServers();
 						for(int i = 0; i < serverIds.size(); i++) {
 							try {
-								if(this.server.id == i) continue;
-								Socket broadcast = new Socket(Server.HOSTNAME, serverIds.get(i));
+								if(this.server.id == serverIds.get(i)) continue;
+								Socket broadcast = new Socket(Server.HOSTNAME, serverIds.get(i) + Server.PORT);
 								PrintWriter pw = new PrintWriter(broadcast.getOutputStream(), true);
 								pw.println(Server.MESSAGE + " " + message);
 								broadcast.close();
@@ -84,6 +85,7 @@ public class ServerLogic extends Thread{
 					}
 				}
 			}
+			
 
 			connection.close();
 		} catch (IOException e) {

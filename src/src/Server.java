@@ -39,6 +39,7 @@ public class Server {
 		this.serverListenerPortNumber = PORT + id;
 		this.activeServers = new boolean[n];
 		this.activeServers[id] = true;
+		this.messages = new ArrayList<String>();
 		
 		//Server starts
 		//Create two threads for the two listening sockets
@@ -66,6 +67,7 @@ public class Server {
 		while(true) {
 			try {
 				Socket discovery = new Socket(HOSTNAME, this.serverListenerPortNumber);
+				discovery.close();
 				break;
 			} catch (UnknownHostException e) {
 				e.printStackTrace();
