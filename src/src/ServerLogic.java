@@ -10,6 +10,7 @@ public class ServerLogic extends Thread{
 
 	Server server;
 	Socket connection;
+	
 	public ServerLogic(Server server, Socket connection) {
 		this.server = server;
 		this.connection = connection;
@@ -33,8 +34,6 @@ public class ServerLogic extends Thread{
 					break;
 				}
 				case Server.HEARTBEAT: {
-					//Not required, used for debugging purposes
-					System.out.println("" + server.masterListenerPortNumber + ": Heartbeat received from " + commands[1]);
 					break;
 				}
 				case Server.MESSAGE: {
@@ -58,6 +57,7 @@ public class ServerLogic extends Thread{
 						result += serverIds.get(i);
 						if (i != serverIds.size() -1) result += ", ";
 					}
+					output.println(result);
 					break;
 				}
 				case Server.BROADCAST:{

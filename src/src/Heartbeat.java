@@ -5,27 +5,26 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
-public class Heartbeat extends Thread{
-	
+public class Heartbeat extends Thread {
+
 	Server server;
-	
+
 	String serverHostName;
 	String targetHostName;
-	
+
 	int targetServerListenerPortNumber;
 	int targetMasterListenerPortNumber;
-	
+
 	public Heartbeat(Server server, String hostName, int targetServerPortNumber) {
 		this.server = server;
 		this.serverHostName = Server.HOSTNAME;
 		this.targetHostName = hostName;
 		this.targetServerListenerPortNumber = targetServerPortNumber;
 	}
-	
-	//Returns true if a server has been discovered
-	public boolean discoverNewServer() { 
+
+	// Returns true if a server has been discovered
+	public boolean discoverNewServer() {
 		try {
-			System.out.println( "" + server.masterListenerPortNumber + ": Discovering New Server at " + this.targetServerListenerPortNumber);
 			if (this.server.serverExists(this.targetServerListenerPortNumber)) return false;
 			Socket discover = new Socket(this.targetHostName, this.targetServerListenerPortNumber);
 			this.server.addServer(this.targetServerListenerPortNumber, -1);
@@ -36,39 +35,41 @@ public class Heartbeat extends Thread{
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
-			System.out.println( "" + server.masterListenerPortNumber + ": Heartbeat failed, server " + this.targetServerListenerPortNumber + " does not appear to be online");
+			System.out.println("" + server.masterListenerPortNumber + ": Heartbeat failed, server "
+					+ this.targetServerListenerPortNumber + " does not appear to be online");
 		}
 		return false;
 	}
-	
-	//Heartbeats are for server-server connection
-	//The initial connect is done using the serverListenerPortNumber
-	//The subsequent connects are created from a new Socket
-	@Override
-	public void run() { 	
-			if (discoverNewServer()) {
-				//If we discover a server at this listener port number, we have contacted it and received a heartbeat port to connect to
-				//Then we actually form the heartbeat
 
-				this.server.addServer(this.targetServerListenerPortNumber, this.targetMasterListenerPortNumber);
-				while (true) {
+	// Heartbeats are for server-server connection
+	// The initial connect is done using the serverListenerPortNumber
+	// The subsequent connects are created from a new Socket
+	@Override
+	public void run() {
+		if (discoverNewServer()) {
+			// If we discover a server at this listener port number, we have contacted it
+			// and received a heartbeat port to connect to
+			// Then we actually form the heartbeat
+
+			this.server.addServer(this.targetServerListenerPortNumber, this.targetMasterListenerPortNumber);
+			while (true) {
+				try {
+					Socket heartbeat = new Socket(targetHostName, this.targetServerListenerPortNumber);
+					heartbeat.close();
 					try {
-						Socket heartbeat = new Socket(targetHostName, this.targetServerListenerPortNumber);
-						heartbeat.close();
-						try {
-							Thread.sleep(2000);
-						} catch (InterruptedException e) {
-							e.printStackTrace();
-						}
-						
-					} catch (UnknownHostException e) {
+						Thread.sleep(2000);
+					} catch (InterruptedException e) {
 						e.printStackTrace();
-					} catch (IOException e) {
-						System.out.println("Lost connection to " + this.targetServerListenerPortNumber);
-						break;
 					}
+
+				} catch (UnknownHostException e) {
+					e.printStackTrace();
+				} catch (IOException e) {
+					System.out.println("Lost connection to " + this.targetServerListenerPortNumber);
+					break;
 				}
-				this.server.removeServer(this.targetServerListenerPortNumber);
 			}
+			this.server.removeServer(this.targetServerListenerPortNumber);
+		}
 	}
 }
