@@ -42,7 +42,7 @@ public class ServerLogic extends Thread{
 						break;
 					}
 					case Server.MESSAGE: {
-						this.server.addMessage(command.substring(Server.MESSAGE.length()));
+						this.server.addMessage(command.substring(Server.MESSAGE.length() + 1));
 						break;
 					}
 					case Server.GET: {
