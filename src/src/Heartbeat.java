@@ -48,13 +48,9 @@ public class Heartbeat extends Thread {
 			while (true) {
 				try {
 					Socket heartbeat = new Socket(targetHostName, this.targetServerListenerPortNumber);
-					/*
-					PrintWriter pw = new PrintWriter(heartbeat.getOutputStream(), true);
-					pw.println(Server.HEARTBEAT);
-					*/
 					heartbeat.close();
 					try {
-						Thread.sleep(2000);
+						Thread.sleep(500);
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}

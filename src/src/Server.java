@@ -23,6 +23,7 @@ public class Server {
 	public final static int PORT = 20000;
 
 	int n;
+	int id;
 	int masterListenerPortNumber;
 	int serverListenerPortNumber;
 	ServerSocket serverListeningSocket;
@@ -33,6 +34,7 @@ public class Server {
 	public Server(int id, int n, int portNumber) {
 		if(n < id) System.err.println("Error, the value of N should be greater than id");
 		this.n = n;
+		this.id = id;
 		this.masterListenerPortNumber = portNumber;
 		this.serverListenerPortNumber = PORT + id;
 		this.activeServers = new boolean[n];
